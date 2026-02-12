@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Isabella Martinez
+EMAIL;TYPE=INTERNET:isabella@company.com
+TEL:555-0108
+ORG:Enterprise Inc
+TITLE:Senior Developer
+URL:https://isabellamartinez.dev
+TZ:America/Los_Angeles
+BDAY:19900522
+NOTE:Met at conference 2025
+END:VCARD

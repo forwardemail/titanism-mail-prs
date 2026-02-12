@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#667eea" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://api.forwardemail.net; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; media-src 'none'"
+    />
+    <title>Forward Email Webmail</title>
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="alternate icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="alternate icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://api.forwardemail.net" />
+    <link rel="dns-prefetch" href="https://api.forwardemail.net" />
+  </head>
+  <body id="rl-app">
+    <div class="fe-stars">
+      <canvas id="stars"></canvas>
+      <canvas id="stars2"></canvas>
+      <canvas id="stars3"></canvas>
+    </div>
+    <div class="fe-login-shell" style="display: none">
+      <div id="login-root"></div>
+    </div>
+
+    <div id="mailbox-root"></div>
+
+    <div id="contacts-root"></div>
+    <div id="calendar-root"></div>
+    <div id="profile-root"></div>
+    <div id="settings-root"></div>
+
+    <div id="compose-root"></div>
+    <div id="passphrase-root"></div>
+    <div id="toasts-root"></div>
+
+    <!-- Fallback recovery UI for catastrophic errors before main JS loads -->
+    <div
+      id="fe-fallback-recovery"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #0b1220;
+        z-index: 99999;
+        font-family: system-ui, sans-serif;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          padding: 20px;
+        "
+      >
+        <div
+          style="
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 400px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+          "
+        >
+          <h2 style="margin: 0 0 16px; font-size: 20px">Unable to Load App</h2>
+          <p style="margin: 0 0 24px; color: #9ca3af; font-size: 14px; line-height: 1.5">
+            The app couldn't start properly. This may be due to a recent update or cached files.
+          </p>
+          <button
+            id="fe-fallback-clear-btn"
+            style="
+              background: #3b82f6;
+              color: #fff;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 8px;
+              font-size: 14px;
+              cursor: pointer;
+              font-weight: 500;
+            "
+          >
+            Clear Cache & Reload
+          </button>
+          <p style="margin: 16px 0 0; color: #6b7280; font-size: 12px">
+            This will refresh the app with the latest version.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Show fallback UI if main script fails to load/execute within 15 seconds
+      (function () {
+        var timeout = setTimeout(function () {
+          var fallback = document.getElementById('fe-fallback-recovery');
+          if (fallback && !window.__appBootstrapped) {
+            fallback.style.display = 'block';
+          }
+        }, 15000);
+
+        // Clear timeout once app bootstraps successfully
+        window.__markAppBootstrapped = function () {
+          clearTimeout(timeout);
+          window.__appBootstrapped = true;
+        };
+
+        // Handle fallback button click
+        document.getElementById('fe-fallback-clear-btn').addEventListener('click', function () {
+          this.disabled = true;
+          this.textContent = 'Clearing...';
+
+          Promise.resolve()
+            .then(function () {
+              if ('serviceWorker' in navigator) {
+                return navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all(
+                    regs.map(function (r) {
+                      return r.unregister();
+                    }),
+                  );
+                });
+              }
+            })
+            .then(function () {
+              if ('caches' in window) {
+                return caches.keys().then(function (names) {
+                  return Promise.all(
+                    names.map(function (n) {
+                      return caches.delete(n);
+                    }),
+                  );
+                });
+              }
+            })
+            .then(function () {
+              window.location.reload();
+            })
+            .catch(function () {
+              window.location.reload();
+            });
+        });
+      })();
+    </script>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+/**
+ * Pages Index
+ * ============
+ * Page-level styles that are still in use.
+ * Most UI is now handled by Tailwind utility classes.
+ */
+
+@import './mailbox.css';

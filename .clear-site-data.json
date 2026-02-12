@@ -1,0 +1,12 @@
+{
+  "description": "Maps file patterns to Clear-Site-Data targets. When files matching these patterns change between releases, CI will warn that clear-manifest.json may need updating. See docs/clear-site-data-spec.md for details.",
+  "triggers": {
+    "cache": ["public/sw-sync.js", "workbox.config.cjs", "src/workers/sync.worker.ts"],
+    "storage": [
+      "src/utils/db-constants.ts",
+      "src/utils/db.js",
+      "src/utils/db-recovery.js",
+      "src/workers/db.worker.ts"
+    ]
+  }
+}

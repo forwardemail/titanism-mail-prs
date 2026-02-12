@@ -1,0 +1,24 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Forward Email//Webmail//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:detailed-001@forwardemail.net
+DTSTAMP:20260115T120000Z
+DTSTART:20260122T160000Z
+DTEND:20260122T170000Z
+SUMMARY:Product Demo
+DESCRIPTION:Showcase new features to stakeholders
+LOCATION:Conference Room B
+URL:https://zoom.us/j/123456789
+ATTENDEE;CN=alice@example.com:mailto:alice@example.com
+ATTENDEE;CN=bob@example.com:mailto:bob@example.com
+TZID:America/Chicago
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Product Demo reminder
+TRIGGER:-PT15M
+END:VALARM
+END:VEVENT
+END:VCALENDAR

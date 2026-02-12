@@ -1,0 +1,278 @@
+/**
+ * Bottom Sheet Component Styles
+ * ============================
+ * Mobile-friendly action sheet that slides up from the bottom.
+ * Provides better thumb reachability on mobile devices.
+ *
+ * USAGE:
+ * Import and use BottomSheet.svelte component with actions array.
+ */
+
+/* Backdrop */
+.fe-bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop, 50);
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fe-backdrop-fade-in 0.2s ease-out;
+}
+
+@keyframes fe-backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sheet container */
+.fe-bottom-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  background: var(--surface-modal, #1e293b);
+  border-radius: var(--radius-xl, 12px) var(--radius-xl, 12px) 0 0;
+  box-shadow: var(--shadow-2xl, 0 -4px 20px rgba(0, 0, 0, 0.3));
+  overflow: hidden;
+  animation: fe-sheet-slide-up 0.3s ease-out;
+  touch-action: none;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@keyframes fe-sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Drag handle */
+.fe-bottom-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3, 12px);
+  cursor: grab;
+}
+
+.fe-bottom-sheet-handle:active {
+  cursor: grabbing;
+}
+
+.fe-bottom-sheet-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--border-strong, #475569);
+}
+
+/* Header */
+.fe-bottom-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4, 16px) var(--space-3, 12px);
+  border-bottom: 1px solid var(--border-default, #334155);
+}
+
+.fe-bottom-sheet-title {
+  margin: 0;
+  font-size: var(--text-lg, 15px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.fe-bottom-sheet-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  border-radius: var(--radius-md, 8px);
+  transition: background-color var(--transition-fast, 100ms);
+}
+
+.fe-bottom-sheet-close:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary, #e5e7eb);
+}
+
+/* Content / Actions */
+.fe-bottom-sheet-content {
+  padding: var(--space-2, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.fe-bottom-sheet-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #e5e7eb);
+  font-size: var(--text-md, 14px);
+  font-weight: var(--font-medium, 500);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-md, 8px);
+  transition:
+    background-color var(--transition-fast, 100ms),
+    color var(--transition-fast, 100ms);
+}
+
+.fe-bottom-sheet-action:hover:not(:disabled) {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.fe-bottom-sheet-action:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fe-bottom-sheet-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fe-bottom-sheet-action--destructive {
+  color: var(--color-error, #ef4444);
+}
+
+.fe-bottom-sheet-action--destructive:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Footer */
+.fe-bottom-sheet-footer {
+  padding: var(--space-2, 8px);
+  border-top: 1px solid var(--border-default, #334155);
+}
+
+.fe-bottom-sheet-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: 1px solid var(--border-default, #334155);
+  background: transparent;
+  color: var(--text-primary, #e5e7eb);
+  font-size: var(--text-md, 14px);
+  font-weight: var(--font-semibold, 600);
+  cursor: pointer;
+  border-radius: var(--radius-md, 8px);
+  transition:
+    background-color var(--transition-fast, 100ms),
+    border-color var(--transition-fast, 100ms);
+}
+
+.fe-bottom-sheet-cancel:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--border-strong, #475569);
+}
+
+/* Light mode */
+body.light-mode .fe-bottom-sheet,
+:root:not(.dark) .fe-bottom-sheet {
+  background: var(--surface-modal, #ffffff);
+}
+
+body.light-mode .fe-bottom-sheet-handle-bar,
+:root:not(.dark) .fe-bottom-sheet-handle-bar {
+  background: var(--border-strong, #cbd5e1);
+}
+
+body.light-mode .fe-bottom-sheet-header,
+:root:not(.dark) .fe-bottom-sheet-header {
+  border-bottom-color: var(--border-default, #e2e8f0);
+}
+
+body.light-mode .fe-bottom-sheet-title,
+:root:not(.dark) .fe-bottom-sheet-title {
+  color: var(--text-primary, #0f172a);
+}
+
+body.light-mode .fe-bottom-sheet-close,
+:root:not(.dark) .fe-bottom-sheet-close {
+  color: var(--text-secondary, #64748b);
+}
+
+body.light-mode .fe-bottom-sheet-close:hover,
+:root:not(.dark) .fe-bottom-sheet-close:hover {
+  background: var(--surface-hover, #f1f5f9);
+  color: var(--text-primary, #0f172a);
+}
+
+body.light-mode .fe-bottom-sheet-action,
+:root:not(.dark) .fe-bottom-sheet-action {
+  color: var(--text-primary, #0f172a);
+}
+
+body.light-mode .fe-bottom-sheet-action:hover:not(:disabled),
+:root:not(.dark) .fe-bottom-sheet-action:hover:not(:disabled) {
+  background: var(--surface-hover, #f1f5f9);
+}
+
+body.light-mode .fe-bottom-sheet-footer,
+:root:not(.dark) .fe-bottom-sheet-footer {
+  border-top-color: var(--border-default, #e2e8f0);
+}
+
+body.light-mode .fe-bottom-sheet-cancel,
+:root:not(.dark) .fe-bottom-sheet-cancel {
+  color: var(--text-primary, #0f172a);
+  border-color: var(--border-default, #e2e8f0);
+}
+
+body.light-mode .fe-bottom-sheet-cancel:hover,
+:root:not(.dark) .fe-bottom-sheet-cancel:hover {
+  background: var(--surface-hover, #f1f5f9);
+  border-color: var(--border-strong, #cbd5e1);
+}
+
+/* Desktop: Convert to centered modal on larger screens */
+@media (min-width: 641px) {
+  .fe-bottom-sheet-backdrop {
+    align-items: center;
+  }
+
+  .fe-bottom-sheet {
+    border-radius: var(--radius-xl, 12px);
+    margin: var(--space-4, 16px);
+    animation: fe-sheet-fade-in 0.2s ease-out;
+  }
+
+  @keyframes fe-sheet-fade-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .fe-bottom-sheet-handle {
+    display: none;
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "_docs": "Kill switch for bad releases. Set clear_below to a semver version to force all older clients to wipe local data and reload. Set to null to disable. See docs/clear-site-data-spec.md",
+  "version": "0.0.1",
+  "clear_below": null
+}

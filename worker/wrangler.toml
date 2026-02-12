@@ -1,0 +1,17 @@
+name = "webmail-cdn"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Route all traffic for this domain through the worker
+# IMPORTANT: routes must come BEFORE [[r2_buckets]] in TOML
+routes = [
+  { pattern = "mail.forwardemail.net/*", zone_name = "forwardemail.net" }
+]
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "webmail-prod"
+
+[vars]
+# Environment variables if needed
