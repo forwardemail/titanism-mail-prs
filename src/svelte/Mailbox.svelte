@@ -161,6 +161,7 @@
   import Lock from '@lucide/svelte/icons/lock';
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
+  import WifiOff from '@lucide/svelte/icons/wifi-off';
   import EmailIframe from './components/EmailIframe.svelte';
 
   const isBodyPrefetchEnabled = () =>
@@ -906,6 +907,19 @@ const stopVerticalResize = () => {
   };
 
   let isDarkMode = $state(false);
+
+  // Network status tracking for offline banner
+  let isOffline = $state(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  $effect(() => {
+    const goOffline = () => { isOffline = true; };
+    const goOnline = () => { isOffline = false; };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  });
 
   const updateThemeState = () => {
     if (typeof document === 'undefined') return;
@@ -4204,6 +4218,12 @@ const stopVerticalResize = () => {
     class="fe-mailbox-wrapper"
     class:mobile-reader={$mobileReader}
   >
+  {#if isOffline}
+    <div class="flex items-center justify-center gap-2 px-4 py-1.5 bg-yellow-500/15 border-b border-yellow-500/25 text-yellow-700 dark:text-yellow-400 text-sm" role="status">
+      <WifiOff class="h-3.5 w-3.5 shrink-0" />
+      <span>You're offline. Cached messages are still available.</span>
+    </div>
+  {/if}
   <div class="flex items-center gap-3 px-4 py-2 bg-muted/50">
     <Tooltip.Root>
       <Tooltip.Trigger>

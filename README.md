@@ -292,4 +292,4 @@ curl -X POST "https://api.cloudflare.com/client/v4/zones/ZONE_ID/purge_cache" \
 
 ## License
 
-Private - Forward Email
+[Business Source License 1.1](LICENSE.md) - Forward Email LLC
