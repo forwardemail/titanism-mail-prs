@@ -822,7 +822,7 @@
 
   const saveArchiveFolder = async () => {
     try {
-      await setSettingValue('archive_folder', archiveFolder, { account: getAccountId() });
+      await setSettingValue('archive_folder', archiveFolder || null, { account: getAccountId() });
       toasts?.show?.('Archive folder updated', 'success');
     } catch (err) {
       toasts?.show?.((err as Error)?.message || 'Failed to save archive folder', 'error');
@@ -831,7 +831,7 @@
 
   const saveSentFolder = async () => {
     try {
-      await setSettingValue('sent_folder', sentFolder, { account: getAccountId() });
+      await setSettingValue('sent_folder', sentFolder || null, { account: getAccountId() });
       toasts?.show?.('Sent folder updated', 'success');
     } catch (err) {
       toasts?.show?.((err as Error)?.message || 'Failed to save sent folder', 'error');
@@ -840,7 +840,7 @@
 
   const saveDraftsFolder = async () => {
     try {
-      await setSettingValue('drafts_folder', draftsFolder, { account: getAccountId() });
+      await setSettingValue('drafts_folder', draftsFolder || null, { account: getAccountId() });
       toasts?.show?.('Drafts folder updated', 'success');
     } catch (err) {
       toasts?.show?.((err as Error)?.message || 'Failed to save drafts folder', 'error');
