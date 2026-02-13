@@ -944,6 +944,7 @@ export const mailService = {
             trackingPixelCount: sanitized.trackingPixelCount,
             blockedRemoteImageCount: sanitized.blockedRemoteImageCount,
           });
+          onAttachments?.(attachments);
           await cacheMessageContent(
             message,
             inlinedBody,
