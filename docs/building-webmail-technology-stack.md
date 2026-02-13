@@ -103,6 +103,71 @@ flowchart LR
 | Lighthouse CI            | Performance, a11y, best practices (90+) |
 | rollup-plugin-visualizer | Bundle analysis (`pnpm analyze`)        |
 
+## Build-Time Environment Variables
+
+Vite statically replaces these values at build time via the `define` option in
+`vite.config.js`. Every occurrence in source code is swapped with the literal
+string during compilation — they do not exist at runtime as real environment
+variables.
+
+| Variable                                | Source                                | Example Value                  | Purpose                                          |
+| --------------------------------------- | ------------------------------------- | ------------------------------ | ------------------------------------------------ |
+| `import.meta.env.VITE_PKG_VERSION`      | `package.json` → `version`            | `0.0.1`                        | Semantic version used for clear-site-data checks |
+| `import.meta.env.VITE_APP_VERSION`      | `${pkg.version}-${BUILD_HASH}`        | `0.0.1-a1b2c3d4`               | Full version with build hash for cache busting   |
+| `import.meta.env.VITE_BUILD_HASH`       | MD5 of `${pkg.version}-${Date.now()}` | `a1b2c3d4`                     | Unique per-build identifier                      |
+| `import.meta.env.VITE_WEBMAIL_API_BASE` | `.env` or CI environment              | `https://api.forwardemail.net` | API base URL (set externally, not in `define`)   |
+
+### How it works
+
+```js
+// vite.config.js
+const pkg = require('./package.json');
+const BUILD_HASH = createHash('md5')
+  .update(`${pkg.version}-${Date.now()}`)
+  .digest('hex')
+  .slice(0, 8);
+
+export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(`${pkg.version}-${BUILD_HASH}`),
+    'import.meta.env.VITE_BUILD_HASH': JSON.stringify(BUILD_HASH),
+    'import.meta.env.VITE_PKG_VERSION': JSON.stringify(pkg.version),
+  },
+});
+```
+
+At build time, Vite replaces source references like:
+
+```js
+// Source
+const version = import.meta.env.VITE_PKG_VERSION;
+
+// After build
+const version = '0.0.1';
+```
+
+### Where they're used
+
+- **`VITE_PKG_VERSION`** — Boot-time version check in `src/main.ts` compares
+  against a server-side `clear_below` threshold to trigger cache clearing
+  (see [clear-site-data-spec](clear-site-data-spec.md)). Also displayed in
+  Settings and sent with feedback reports.
+- **`VITE_APP_VERSION`** — Full version identifier for cache busting and
+  diagnostics.
+- **`VITE_BUILD_HASH`** — Unique build fingerprint for tracking deployments.
+
+### TypeScript support
+
+Build-time variables are typed in `src/env.d.ts`:
+
+```ts
+interface ImportMetaEnv {
+  readonly VITE_PKG_VERSION: string;
+  readonly VITE_APP_VERSION: string;
+  readonly VITE_BUILD_HASH: string;
+}
+```
+
 ## Performance Budget
 
 ```mermaid

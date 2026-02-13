@@ -86,7 +86,7 @@
       doNotTrack: navigator.doNotTrack,
       timestamp: new Date().toISOString(),
       url: window.location.href,
-      appVersion: '0.0.1',
+      appVersion: import.meta.env.VITE_PKG_VERSION || '0.0.0',
       account: activeEmail,
       activeEmail: activeEmail,
     };

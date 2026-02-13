@@ -1803,7 +1803,7 @@
             <Card.Title>Version Information</Card.Title>
           </Card.Header>
           <Card.Content class="text-sm">
-            <div><strong>App Version:</strong> 0.0.1</div>
+            <div><strong>App Version:</strong> {import.meta.env.VITE_PKG_VERSION || '0.0.0'}</div>
             <div><strong>Database Schema:</strong> v{databaseVersion}</div>
           </Card.Content>
         </Card.Root>

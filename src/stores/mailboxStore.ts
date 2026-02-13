@@ -60,22 +60,8 @@ import { effectiveLayoutMode } from './settingsStore';
 import { normalizeLayoutMode } from './settingsRegistry';
 import { warn } from '../utils/logger.ts';
 
-// System folders that cannot be renamed/deleted
-const SYSTEM_FOLDERS = new Set([
-  'INBOX',
-  'SENT',
-  'SENT MAIL',
-  'SENT ITEMS',
-  'DRAFTS',
-  'DRAFT',
-  'TRASH',
-  'DELETED',
-  'DELETED ITEMS',
-  'ARCHIVE',
-  'JUNK',
-  'SPAM',
-  'OUTBOX',
-]);
+// Folders that are always protected from rename/delete
+const ALWAYS_PROTECTED = new Set(['INBOX', 'OUTBOX']);
 
 const EXPANDED_FOLDERS_KEY = 'folder_expansion_state';
 const FOLDERS_CACHE_TTL = 15000;
@@ -1136,8 +1122,14 @@ const createMailboxStore = () => {
       return customFolder;
     }
 
-    // Auto-detect: find folder named "Archive"
+    // Auto-detect from folder list
     const list = get(folders) || [];
+
+    // Strongest signal: IMAP specialUse flag
+    const specialUseMatch = list.find((f) => f.specialUse === '\\Archive');
+    if (specialUseMatch) return specialUseMatch.path;
+
+    // Fall back to name-based detection
     const match = list.find(
       (f) =>
         (f.path || '').toUpperCase() === 'ARCHIVE' || (f.name || '').toUpperCase() === 'ARCHIVE',
@@ -1152,8 +1144,14 @@ const createMailboxStore = () => {
       return customFolder;
     }
 
-    // Auto-detect: find folder named "Trash" or "Deleted"
+    // Auto-detect from folder list
     const list = get(folders) || [];
+
+    // Strongest signal: IMAP specialUse flag
+    const specialUseMatch = list.find((f) => f.specialUse === '\\Trash');
+    if (specialUseMatch) return specialUseMatch.path;
+
+    // Fall back to name-based detection
     const match = list.find(
       (f) =>
         (f.path || '').toUpperCase() === 'TRASH' ||
@@ -1173,8 +1171,14 @@ const createMailboxStore = () => {
       return customFolder;
     }
 
-    // Auto-detect: find folder named "Sent" or "Sent Mail"
+    // Auto-detect from folder list
     const list = get(folders) || [];
+
+    // Strongest signal: IMAP specialUse flag
+    const specialUseMatch = list.find((f) => f.specialUse === '\\Sent');
+    if (specialUseMatch) return specialUseMatch.path;
+
+    // Fall back to name-based detection
     const match = list.find(
       (f) =>
         (f.path || '').toUpperCase() === 'SENT' ||
@@ -1196,8 +1200,14 @@ const createMailboxStore = () => {
       return customFolder;
     }
 
-    // Auto-detect: find folder named "Drafts" or "Draft"
+    // Auto-detect from folder list
     const list = get(folders) || [];
+
+    // Strongest signal: IMAP specialUse flag
+    const specialUseMatch = list.find((f) => f.specialUse === '\\Drafts');
+    if (specialUseMatch) return specialUseMatch.path;
+
+    // Fall back to name-based detection
     const match = list.find(
       (f) =>
         (f.path || '').toUpperCase() === 'DRAFTS' ||
@@ -1413,25 +1423,30 @@ const createMailboxStore = () => {
     };
   };
 
-  const moveMessage = async (msg, targetOverride, { stayInFolder = true } = {}) => {
+  const moveMessage = async (
+    msg,
+    targetOverride,
+    { stayInFolder = true, allowFromSent = false } = {},
+  ) => {
     const apiId = getMessageApiId(msg);
     if (!apiId) return { success: false };
     const target = targetOverride;
     if (!target || target === msg.folder) return { success: false };
 
-    // Prevent moving messages out of Sent folder
-    const sentPath = getSentFolderPath();
-    const msgFolder = (msg.folder || '').toUpperCase();
-    const sentUpper = (sentPath || '').toUpperCase();
-    if (
-      msgFolder === sentUpper ||
-      msgFolder === 'SENT' ||
-      msgFolder === 'SENT MAIL' ||
-      msgFolder === 'SENT ITEMS'
-    ) {
-      const toasts = get(toastsRef);
-      toasts?.show?.('Cannot move messages from Sent folder', 'info');
-      return { success: false };
+    // Prevent moving messages out of the active Sent folder (except to Trash)
+    if (!allowFromSent) {
+      const sentPath = getSentFolderPath();
+      const msgFolder = (msg.folder || '').toUpperCase();
+      const sentUpper = (sentPath || '').toUpperCase();
+      if (sentUpper && msgFolder === sentUpper) {
+        const trashPath = getTrashFolderPath();
+        const trashUpper = (trashPath || '').toUpperCase();
+        if (target.toUpperCase() !== trashUpper) {
+          const toasts = get(toastsRef);
+          toasts?.show?.('Cannot move messages from Sent folder', 'info');
+          return { success: false };
+        }
+      }
     }
 
     const account = Local.get('email') || 'default';
@@ -1523,16 +1538,14 @@ const createMailboxStore = () => {
     const account = Local.get('email') || 'default';
     const sentPath = getSentFolderPath();
     const sentUpper = (sentPath || '').toUpperCase();
+    const trashPath = getTrashFolderPath();
+    const trashUpper = (trashPath || '').toUpperCase();
+    const targetUpper = target.toUpperCase();
 
-    // Filter out messages that can't be moved (sent folder, same folder, no API id)
+    // Filter out messages that can't be moved (active sent folder unless moving to trash, same folder, no API id)
     const validMessages = messagesToMove.filter((msg) => {
       const msgFolder = (msg.folder || '').toUpperCase();
-      if (
-        msgFolder === sentUpper ||
-        msgFolder === 'SENT' ||
-        msgFolder === 'SENT MAIL' ||
-        msgFolder === 'SENT ITEMS'
-      ) {
+      if (sentUpper && msgFolder === sentUpper && targetUpper !== trashUpper) {
         return false;
       }
       if (msg.folder === target) return false;
@@ -1738,7 +1751,21 @@ const createMailboxStore = () => {
 
   const isSystemFolder = (folderPath) => {
     const normalized = (folderPath || '').toUpperCase().trim();
-    return SYSTEM_FOLDERS.has(normalized);
+    if (ALWAYS_PROTECTED.has(normalized)) return true;
+
+    // Dynamically protect only the currently resolved special folders
+    const activePaths = new Set(
+      [
+        getSentFolderPath(),
+        getDraftsFolderPath(),
+        getTrashFolderPath(),
+        getArchiveFolderPath(),
+        getSpamFolderPath(),
+      ]
+        .filter(Boolean)
+        .map((p) => p.toUpperCase().trim()),
+    );
+    return activePaths.has(normalized);
   };
 
   const hasChildren = (folder, allFolders) => {
@@ -1954,6 +1981,12 @@ const createMailboxStore = () => {
    */
   const getSpamFolderPath = () => {
     const list = get(folders) || [];
+
+    // Strongest signal: IMAP specialUse flag
+    const specialUseMatch = list.find((f) => f.specialUse === '\\Junk');
+    if (specialUseMatch) return specialUseMatch.path;
+
+    // Fall back to name-based detection
     const match = list.find(
       (f) =>
         (f.path || '').toUpperCase() === 'SPAM' ||

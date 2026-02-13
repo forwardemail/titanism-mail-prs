@@ -75,7 +75,6 @@
   import { getMessageApiId } from '../utils/sync-helpers';
   import { extractDisplayName, isValidEmail } from '../utils/address.ts';
   import { queueEmail } from '../utils/outbox-service';
-  import { getSentFolderPreference } from '../utils/sent-folder.js';
   import { saveSentCopy } from '../utils/sent-copy.js';
   import { parseMailto, mailtoToPrefill } from '../utils/mailto';
   import {
@@ -1814,10 +1813,7 @@
 
   const saveSentCopyWrapper = async (payload: Record<string, unknown>) => {
     try {
-      const folder = await getSentFolderPreference();
-      if (folder) {
-        await saveSentCopy(payload, folder);
-      }
+      await saveSentCopy(payload);
     } catch (err) {
       console.warn('[Compose] Failed to save sent copy:', err);
     }

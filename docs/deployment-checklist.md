@@ -163,6 +163,17 @@ Traffic routes through the Worker — the A record is a placeholder.
 VITE_WEBMAIL_API_BASE=https://api.forwardemail.net
 ```
 
+The following variables are injected automatically by `vite.config.js` at build
+time via the `define` option (no manual configuration needed):
+
+| Variable           | Source            | Purpose                                 |
+| ------------------ | ----------------- | --------------------------------------- |
+| `VITE_PKG_VERSION` | `package.json`    | Semver for clear-site-data version gate |
+| `VITE_APP_VERSION` | `version + hash`  | Full version for cache busting          |
+| `VITE_BUILD_HASH`  | MD5 of version+ts | Unique per-build fingerprint            |
+
+See [Technology Stack — Build-Time Environment Variables](building-webmail-technology-stack.md#build-time-environment-variables) for details.
+
 ### Runtime
 
 None needed — the app is entirely client-side after build.

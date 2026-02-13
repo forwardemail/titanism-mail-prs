@@ -1905,8 +1905,8 @@ const buildOriginalViewerPage = ({
     };
   `;
 
-  const scriptBlob = new Blob([scriptContent], { type: 'application/javascript' });
-  const scriptUrl = URL.createObjectURL(scriptBlob);
+  // Escape </ sequences so embedded data can't break out of the script tag
+  const safeScriptContent = scriptContent.replace(/<\//g, '<\\/');
 
   return `<!doctype html>
 <html lang="en">
@@ -1968,7 +1968,7 @@ const buildOriginalViewerPage = ({
       <pre id="decrypted"></pre>
     </div>
   </div>
-  <script src="${scriptUrl}"></script>
+  <script>${safeScriptContent}</script>
 </body>
 </html>`;
 };

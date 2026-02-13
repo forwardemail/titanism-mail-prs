@@ -2625,10 +2625,17 @@ const stopVerticalResize = () => {
   };
 
   const getFolderIcon = (folder) => {
+    // Always use Send icon for the resolved sent folder
+    const folderPath = (folder?.path || '').toUpperCase();
+    const resolvedSent = (sentFolderPath || '').toUpperCase();
+    if (resolvedSent && folderPath === resolvedSent) return Send;
+
     const iconType = (folder?.icon || 'folder').toLowerCase();
     const iconMap = {
       'inbox': Inbox,
       'sent': Send,
+      'sent mail': Send,
+      'sent items': Send,
       'drafts': FileEdit,
       'trash': Trash2,
       'deleted': Trash2,
