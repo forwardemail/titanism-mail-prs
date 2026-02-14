@@ -929,6 +929,12 @@ const stopVerticalResize = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Filter out inline attachments (those with CID) since they're already embedded in the email body
+  const filterDownloadableAttachments = (atts) => {
+    if (!Array.isArray(atts)) return [];
+    return atts.filter((att) => !att.contentId);
+  };
+
   let isDarkMode = $state(false);
 
   // Network status tracking for offline banner
@@ -6158,9 +6164,9 @@ const stopVerticalResize = () => {
                       onLinkClick={handleIframeLinkClick}
                       onFormSubmit={handleIframeFormSubmit}
                     />
-                    {#if $attachments.length}
+                    {#if filterDownloadableAttachments($attachments).length}
                       <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                        {#each $attachments as att}
+                        {#each filterDownloadableAttachments($attachments) as att}
                           {#if isPreviewableImage(att) && att.href}
                             <div class="flex flex-col gap-1 max-w-xs">
                               <button
@@ -6219,9 +6225,9 @@ const stopVerticalResize = () => {
                       onLinkClick={handleIframeLinkClick}
                       onFormSubmit={handleIframeFormSubmit}
                     />
-                    {#if cachedBody?.attachments?.length}
+                    {#if filterDownloadableAttachments(cachedBody?.attachments).length}
                       <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                        {#each cachedBody.attachments as att}
+                        {#each filterDownloadableAttachments(cachedBody?.attachments) as att}
                           {#if isPreviewableImage(att) && att.href}
                             <div class="flex flex-col gap-1 max-w-xs">
                               <button
@@ -6347,9 +6353,9 @@ const stopVerticalResize = () => {
               onLinkClick={handleIframeLinkClick}
               onFormSubmit={handleIframeFormSubmit}
             />
-            {#if $attachments.length}
+            {#if filterDownloadableAttachments($attachments).length}
               <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                {#each $attachments as att}
+                {#each filterDownloadableAttachments($attachments) as att}
                   {#if isPreviewableImage(att) && att.href}
                     <div class="flex flex-col gap-1 max-w-xs">
                       <button
