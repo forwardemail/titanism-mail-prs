@@ -66,12 +66,23 @@ function normalizeContact(raw) {
 }
 
 /**
+ * Sort contacts alphabetically by name, falling back to email.
+ */
+function sortContacts(contacts) {
+  return contacts.sort((a, b) => {
+    const nameA = (a.name || a.email || '').toLowerCase();
+    const nameB = (b.name || b.email || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+
+/**
  * Fetch contacts from the API and update the cache.
  */
 async function fetchAndCache(account) {
   const res = await Remote.request('Contacts', { limit: 500 });
   const list = Array.isArray(res) ? res : res?.Result || res?.contacts || [];
-  const contacts = (list || []).map(normalizeContact).filter(Boolean);
+  const contacts = sortContacts((list || []).map(normalizeContact).filter(Boolean));
   await writeCache(account, contacts).catch(() => {});
   return contacts;
 }
@@ -98,7 +109,7 @@ export async function getContacts(options = {}) {
         // Background refresh — return stale data immediately
         fetchAndCache(account).catch(() => {});
       }
-      return cached.contacts;
+      return sortContacts(cached.contacts);
     }
   }
 

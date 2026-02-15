@@ -53,7 +53,7 @@ export const filteredMessages: Readable<Message[]> = derived(
     $sortOrder,
   ]) => {
     const base = $searchActive
-      ? $searchResults
+      ? ($searchResults || []).filter((m) => !$selectedFolder || m.folder === $selectedFolder)
       : ($messages || []).filter((m) => m.folder === $selectedFolder);
     let list = base;
     if ($unreadOnly) list = list.filter((m) => m.is_unread);

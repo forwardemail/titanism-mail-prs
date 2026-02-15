@@ -9,8 +9,8 @@
 .fe-email-iframe-container {
   width: 100%;
   min-height: 100px;
-  position: relative;
   padding: 20px;
+  flex-shrink: 0;
 }
 
 /* The iframe element */

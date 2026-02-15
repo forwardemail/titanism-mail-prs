@@ -17,6 +17,18 @@ export const getFromDisplay = (message) => {
 };
 
 /**
+ * Get display name from message's "to" field
+ * @param {Object} message - Message object
+ * @returns {string} Display name or email
+ */
+export const getToDisplay = (message) => {
+  if (!message) return '';
+  const list = extractAddressList(message, 'to');
+  const display = displayAddresses(list).join(', ');
+  return display || message.to || message.To || '';
+};
+
+/**
  * Get display name from conversation's latest message
  * @param {Object} conv - Conversation object
  * @returns {string} Display name or email
@@ -29,6 +41,17 @@ export const getConversationFromDisplay = (conv) => {
 };
 
 /**
+ * Get display name from conversation's latest message "to" field
+ * @param {Object} conv - Conversation object
+ * @returns {string} Display name or email
+ */
+export const getConversationToDisplay = (conv) => {
+  if (!conv) return '';
+  const latest = Array.isArray(conv.messages) ? conv.messages[conv.messages.length - 1] : null;
+  return getToDisplay(latest);
+};
+
+/**
  * Get display name (no email) from conversation
  * @param {Object} conv - Conversation object
  * @returns {string} Display name only
@@ -37,11 +60,25 @@ export const getConversationFromName = (conv) =>
   extractDisplayName(getConversationFromDisplay(conv));
 
 /**
+ * Get "To:" display name from conversation (for sent folder)
+ * @param {Object} conv - Conversation object
+ * @returns {string} Display name only
+ */
+export const getConversationToName = (conv) => extractDisplayName(getConversationToDisplay(conv));
+
+/**
  * Get display name (no email) from message
  * @param {Object} msg - Message object
  * @returns {string} Display name only
  */
 export const getMessageFromName = (msg) => extractDisplayName(getFromDisplay(msg));
+
+/**
+ * Get "To:" display name from message (for sent folder)
+ * @param {Object} msg - Message object
+ * @returns {string} Display name only
+ */
+export const getMessageToName = (msg) => extractDisplayName(getToDisplay(msg));
 
 /**
  * Get initials from email sender

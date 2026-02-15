@@ -85,7 +85,7 @@
     createAutosaveTimer,
   } from '../utils/draft-service';
   import { shouldShowAttachmentReminder } from '../utils/attachment-reminder';
-  import { attachmentReminder, getEffectiveSettingValue } from '../stores/settingsStore';
+  import { attachmentReminder, getEffectiveSettingValue, profileName } from '../stores/settingsStore';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
@@ -689,6 +689,11 @@
         const res = await Remote.request('Contacts', { limit: 500 });
         const list = Array.isArray(res) ? res : (res as Record<string, unknown>)?.Result || (res as Record<string, unknown>)?.contacts || [];
         const mapped = (list || []).map(normalizeContactApiItem).filter(Boolean);
+        mapped.sort((a, b) => {
+          const nameA = ((a as {name?: string; email?: string}).name || (a as {email?: string}).email || '').toLowerCase();
+          const nameB = ((b as {name?: string; email?: string}).name || (b as {email?: string}).email || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
         contactOptions = mapped as unknown[];
         contactOptionsLoaded = true;
         return contactOptions;
@@ -1778,7 +1783,9 @@
       return null;
     }
 
-    const from = fromAddress || Local.get('email') || '';
+    const email = fromAddress || Local.get('email') || '';
+    const name = $profileName;
+    const from = name ? `"${name}" <${email}>` : email;
     const payload: Record<string, unknown> = {
       from,
       to: toRecipients,

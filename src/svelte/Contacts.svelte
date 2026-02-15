@@ -409,17 +409,26 @@
     }
   };
 
+  const sortByName = (list: Contact[]) =>
+    [...list].sort((a, b) => {
+      const nameA = (a.name || a.email || '').toLowerCase();
+      const nameB = (b.name || b.email || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
   const applyFilter = () => {
     const q = (query || '').toLowerCase();
     if (!q) {
-      filtered = contacts;
+      filtered = sortByName(contacts);
       return;
     }
-    filtered = contacts.filter(
-      (c) =>
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.email && c.email.toLowerCase().includes(q)) ||
-        (c.company && c.company.toLowerCase().includes(q)),
+    filtered = sortByName(
+      contacts.filter(
+        (c) =>
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.company && c.company.toLowerCase().includes(q)),
+      ),
     );
   };
 

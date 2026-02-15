@@ -825,6 +825,7 @@ export const mailService = {
             (a.content as Uint8Array)?.length ||
             0) as number,
           contentId: contentId as string,
+          disposition,
           href,
           contentType: (a.contentType || a.mimeType || a.type) as string,
           needsDownload: !href && !hasUrl,
@@ -1097,6 +1098,7 @@ export const mailService = {
             (a.content as Uint8Array)?.length ||
             0) as number,
           contentId: contentId as string,
+          disposition,
           href,
           contentType: (a.contentType || a.mimeType || a.type) as string,
           needsDownload: !href && !hasUrl,
@@ -1496,6 +1498,7 @@ function sanitizeAttachments(list: unknown[]): Attachment[] {
         filename: (a.filename || a.name || fallbackName) as string,
         size: (a.size || 0) as number,
         contentId: (a.contentId || a.cid) as string | undefined,
+        disposition: (a.disposition || '') as string,
         href:
           a.href ||
           (typeof a.content === 'string' && (a.content as string).startsWith('data:')

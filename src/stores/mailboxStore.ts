@@ -634,11 +634,38 @@ const createMailboxStore = () => {
         flags: f.flags || f.Flags || [],
       };
     });
+    const SYSTEM_FOLDER_ORDER: Record<string, number> = {
+      INBOX: 0,
+      DRAFTS: 1,
+      DRAFT: 1,
+      SENT: 2,
+      'SENT MAIL': 2,
+      'SENT ITEMS': 2,
+      ARCHIVE: 3,
+      JUNK: 4,
+      SPAM: 4,
+      TRASH: 5,
+      DELETED: 5,
+      'DELETED ITEMS': 5,
+      OUTBOX: 6,
+    };
+    // Get the priority for a folder path, checking the top-level segment
+    // so subfolders (e.g. "Archive/2024") inherit their parent's priority.
+    const getFolderPriority = (upperPath: string): number => {
+      if (SYSTEM_FOLDER_ORDER[upperPath] !== undefined) return SYSTEM_FOLDER_ORDER[upperPath];
+      const sep = upperPath.indexOf('/');
+      if (sep > 0) {
+        const parent = upperPath.substring(0, sep);
+        if (SYSTEM_FOLDER_ORDER[parent] !== undefined) return SYSTEM_FOLDER_ORDER[parent];
+      }
+      return 100;
+    };
     mapped.sort((a, b) => {
-      const pa = a.path?.toUpperCase?.() || '';
-      const pb = b.path?.toUpperCase?.() || '';
-      if (pa === 'INBOX') return -1;
-      if (pb === 'INBOX') return 1;
+      const pa = (a.path || '').toUpperCase();
+      const pb = (b.path || '').toUpperCase();
+      const oa = getFolderPriority(pa);
+      const ob = getFolderPriority(pb);
+      if (oa !== ob) return oa - ob;
       return pa.localeCompare(pb);
     });
     return mapped;

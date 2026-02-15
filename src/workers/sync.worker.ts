@@ -741,6 +741,7 @@ async function fetchAndCacheBodyWithOptions(account, folder, msg, options = {}) 
           filename: att.filename || att.name,
           size: att.size || att.content?.byteLength || att.content?.length || 0,
           contentId,
+          disposition,
           href,
           contentType: att.contentType || att.mimeType || att.type,
           needsDownload: !href && !hasUrl,

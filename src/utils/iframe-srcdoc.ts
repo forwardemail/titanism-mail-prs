@@ -52,6 +52,7 @@ function getResetStyles(): string {
       line-height: 1.6;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      overflow-x: hidden;
     }
 
     body {

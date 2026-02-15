@@ -30,9 +30,13 @@
   } from './mailbox/utils/mailbox-helpers.js';
   import {
     getFromDisplay,
+    getToDisplay,
     getConversationFromDisplay,
+    getConversationToDisplay,
     getConversationFromName,
+    getConversationToName,
     getMessageFromName,
+    getMessageToName,
     getInitials,
     getProfileInitials,
     getAvatarColor,
@@ -139,6 +143,7 @@
   import Plus from '@lucide/svelte/icons/plus';
   import Check from '@lucide/svelte/icons/check';
   import CheckSquare from '@lucide/svelte/icons/check-square';
+  import Square from '@lucide/svelte/icons/square';
   import LogOut from '@lucide/svelte/icons/log-out';
   import MailIcon from '@lucide/svelte/icons/mail';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -702,6 +707,17 @@ const stopVerticalResize = () => {
   // Outbox refresh moved to manual trigger (was causing loops)
   let searchSuggestionsVisible = $state(false);
   let searchInputEl: HTMLInputElement | undefined = $state();
+  let selectionMode = $state(false);
+  $effect(() => {
+    if (!selectionMode) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  });
   let sortMenuOpen = $state(false);
   let labelMenuOpen = $state(false);
   let readerMoveOpen = $state(false);
@@ -929,10 +945,22 @@ const stopVerticalResize = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Filter out inline attachments (those with CID) since they're already embedded in the email body
+  // Filter attachments for the download/preview section.
+  // Only hide attachments that are purely inline decorations (e.g. signature logos):
+  // they must have a CID, be an image, AND have inline disposition explicitly set.
+  // All other attachments (including images without disposition or with disposition=attachment) are shown.
   const filterDownloadableAttachments = (atts) => {
     if (!Array.isArray(atts)) return [];
-    return atts.filter((att) => !att.contentId);
+    return atts.filter((att) => {
+      if (!att.contentId) return true;
+      const type = (att.contentType || att.mimeType || att.type || '').toLowerCase();
+      if (!type.startsWith('image/')) return true;
+      // Only hide if disposition is explicitly 'inline' — these are CID images
+      // embedded in the body (e.g. signature logos). If disposition is missing or
+      // is 'attachment', always show the file.
+      const disp = (att.disposition || '').toLowerCase();
+      return disp !== 'inline';
+    });
   };
 
   let isDarkMode = $state(false);
@@ -2022,6 +2050,10 @@ const stopVerticalResize = () => {
     threadingEnabled.set(!current);
   };
   const selectAllVisible = (list = []) => {
+    if (!selectionMode) {
+      selectionMode = true;
+      return;
+    }
     const ids = (list || []).map((item) => item?.id).filter(Boolean);
     if (!ids.length) return;
     const current = get(selectedConversationIds) || [];
@@ -2073,6 +2105,7 @@ const stopVerticalResize = () => {
 
   const toggleSelection = (item, event) => {
     if (event) event.stopPropagation?.();
+    selectionMode = true;
     if (mailboxStore?.actions?.toggleConversationSelection) {
       mailboxStore.actions.toggleConversationSelection(item);
     }
@@ -2081,6 +2114,7 @@ const stopVerticalResize = () => {
 
   const clearSelection = () => {
     mailboxStore?.actions?.setSelectedIds?.([]);
+    selectionMode = false;
   };
 
   const reloadMessages = async () => {
@@ -3338,6 +3372,10 @@ const stopVerticalResize = () => {
   const sentFolderKey = $derived(normalizeFolderKey(sentFolderPath));
   const trashFolderKey = $derived(normalizeFolderKey(trashFolderPath));
   const archiveFolderKey = $derived(normalizeFolderKey(archiveFolderPath));
+  const listFolderKey = $derived(normalizeFolderKey($selectedFolder));
+  const listIsSentFolder = $derived(sentFolderKey
+    ? listFolderKey === sentFolderKey
+    : matchesFolderKey($selectedFolder, ['SENT', 'SENT MAIL', 'SENT ITEMS']));
   const readerIsSentFolder = $derived(sentFolderKey
     ? readerFolderKey === sentFolderKey
     : matchesFolderKey(readerFolderPath, ['SENT', 'SENT MAIL', 'SENT ITEMS']));
@@ -4052,6 +4090,7 @@ const stopVerticalResize = () => {
         if (folder !== lastFolderVal) {
           lastFolderVal = folder;
           mailboxStore?.actions?.setSelectedIds?.([]);
+          selectionMode = false;
           // Update URL to reflect folder change (only if not triggered by popstate)
           // Always show just the folder - message selection happens separately
           if (folder && !skipFolderUrlUpdate) {
@@ -4606,11 +4645,11 @@ const stopVerticalResize = () => {
                   ($selectedConversationIds || []).includes(item.id),
                 )}
             <button
-              class={`inline-flex items-center justify-center h-11 w-11 transition-colors ${allSelected ? 'bg-accent text-primary' : 'hover:bg-accent hover:text-accent-foreground'}`}
+              class={`inline-flex items-center justify-center h-11 w-11 transition-colors ${allSelected ? 'bg-accent text-primary' : selectionMode ? 'bg-accent/50 text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'}`}
               type="button"
-              data-tooltip="Select all"
+              data-tooltip={selectionMode ? (allSelected ? 'Deselect all' : 'Select all') : 'Select'}
               data-tooltip-position="bottom"
-              aria-label="Select all visible messages"
+              aria-label={selectionMode ? 'Select all visible messages' : 'Enter selection mode'}
               onclick={() =>
                 selectAllVisible($threadingEnabled ? $filteredConversations : $filteredMessages)
               }
@@ -5023,21 +5062,37 @@ const stopVerticalResize = () => {
                   ondragend={handleDragEnd}
                   style="transform: translateX({swipeItemId === conv.id ? swipeDistance : 0}px); will-change: {swipeItemId === conv.id ? 'transform' : 'auto'}; transition: {swiping && swipeItemId === conv.id && !swipeAnimating ? 'none' : 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)'};"
                 >
-                  <button
-                    class={`relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${($selectedConversationIds || []).includes(conv.id) ? 'bg-primary text-primary-foreground' : ''}`}
-                    type="button"
-                    aria-label={($selectedConversationIds || []).includes(conv.id) ? 'Deselect' : 'Select'}
-                    onclick={(e) => { e.stopPropagation(); toggleSelection(conv, e); }}
-                    style={`--avatar-color: ${getAvatarColor(getConversationFromDisplay(conv))}; ${!($selectedConversationIds || []).includes(conv.id) ? `background-color: var(--avatar-color)` : ''}`}
-                  >
-                    {#if ($selectedConversationIds || []).includes(conv.id)}
-                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                      </svg>
-                    {:else}
-                      <span class="text-[10px] font-semibold text-white">{getInitials(getConversationFromDisplay(conv))}</span>
-                    {/if}
-                  </button>
+                  {#if selectionMode}
+                    {@const convSelected = ($selectedConversationIds || []).includes(conv.id)}
+                    <button
+                      class={`relative w-8 h-8 rounded flex items-center justify-center shrink-0 transition-colors ${convSelected ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      type="button"
+                      aria-label={convSelected ? 'Deselect' : 'Select'}
+                      onclick={(e) => { e.stopPropagation(); toggleSelection(conv, e); }}
+                    >
+                      {#if convSelected}
+                        <CheckSquare class="h-5 w-5" />
+                      {:else}
+                        <Square class="h-5 w-5" />
+                      {/if}
+                    </button>
+                  {:else}
+                    <button
+                      class={`relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${($selectedConversationIds || []).includes(conv.id) ? 'bg-primary text-primary-foreground' : ''}`}
+                      type="button"
+                      aria-label={($selectedConversationIds || []).includes(conv.id) ? 'Deselect' : 'Select'}
+                      onclick={(e) => { e.stopPropagation(); toggleSelection(conv, e); }}
+                      style={`--avatar-color: ${getAvatarColor(listIsSentFolder ? (getConversationToDisplay(conv) || getConversationFromDisplay(conv)) : getConversationFromDisplay(conv))}; ${!($selectedConversationIds || []).includes(conv.id) ? `background-color: var(--avatar-color)` : ''}`}
+                    >
+                      {#if ($selectedConversationIds || []).includes(conv.id)}
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                      {:else}
+                        <span class="text-[10px] font-semibold text-white">{getInitials(listIsSentFolder ? (getConversationToDisplay(conv) || getConversationFromDisplay(conv)) : getConversationFromDisplay(conv))}</span>
+                      {/if}
+                    </button>
+                  {/if}
                   <!-- Gmail-style: two rows -->
                   <div class="flex-1 min-w-0 flex flex-col gap-0.5 text-[13px]">
                     <!-- Row 1: From | Subject | Date -->
@@ -5046,7 +5101,7 @@ const stopVerticalResize = () => {
                         {#if conv.hasUnread || conv.is_unread}
                           <span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
                         {/if}
-                        <span class={`truncate ${conv.hasUnread || conv.is_unread ? 'font-semibold' : ''}`}>{getConversationFromName(conv)}</span>
+                        <span class={`truncate ${conv.hasUnread || conv.is_unread ? 'font-semibold' : ''}`}>{listIsSentFolder ? `To: ${getConversationToName(conv) || getConversationFromName(conv)}` : getConversationFromName(conv)}</span>
                         {#if conv.messageCount > 1}
                           <span class="text-[11px] text-muted-foreground shrink-0">({conv.messageCount})</span>
                         {/if}
@@ -5140,18 +5195,34 @@ const stopVerticalResize = () => {
                   ondragstart={(e) => handleDragStart(e, msg)}
                   ondragend={handleDragEnd}
                 >
-                  <button
-                    class={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${($selectedConversationIds || []).includes(msg.id) ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-                    type="button"
-                    aria-label={($selectedConversationIds || []).includes(msg.id) ? 'Deselect' : 'Select'}
-                    onclick={(e) => { e.stopPropagation(); toggleSelection({ id: msg.id }, e); }}
-                    style={`--avatar-color: ${getAvatarColor(getFromDisplay(msg))}; ${!($selectedConversationIds || []).includes(msg.id) ? `background-color: var(--avatar-color)` : ''}`}
-                  >
-                    <svg class="h-4 w-4 text-primary" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                    <span class="text-xs font-medium">{getInitials(getFromDisplay(msg))}</span>
-                  </button>
+                  {#if selectionMode}
+                    {@const msgSelected = ($selectedConversationIds || []).includes(msg.id)}
+                    <button
+                      class={`relative w-10 h-10 rounded flex items-center justify-center shrink-0 transition-colors ${msgSelected ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      type="button"
+                      aria-label={msgSelected ? 'Deselect' : 'Select'}
+                      onclick={(e) => { e.stopPropagation(); toggleSelection({ id: msg.id }, e); }}
+                    >
+                      {#if msgSelected}
+                        <CheckSquare class="h-5 w-5" />
+                      {:else}
+                        <Square class="h-5 w-5" />
+                      {/if}
+                    </button>
+                  {:else}
+                    <button
+                      class={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${($selectedConversationIds || []).includes(msg.id) ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                      type="button"
+                      aria-label={($selectedConversationIds || []).includes(msg.id) ? 'Deselect' : 'Select'}
+                      onclick={(e) => { e.stopPropagation(); toggleSelection({ id: msg.id }, e); }}
+                      style={`--avatar-color: ${getAvatarColor(listIsSentFolder ? (getToDisplay(msg) || getFromDisplay(msg)) : getFromDisplay(msg))}; ${!($selectedConversationIds || []).includes(msg.id) ? `background-color: var(--avatar-color)` : ''}`}
+                    >
+                      <svg class="h-4 w-4 text-primary" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                      </svg>
+                      <span class="text-xs font-medium">{getInitials(listIsSentFolder ? (getToDisplay(msg) || getFromDisplay(msg)) : getFromDisplay(msg))}</span>
+                    </button>
+                  {/if}
                   <div class="flex-1 min-w-0 flex flex-col gap-1">
                     <div class="flex items-center justify-between gap-2">
                       <div class="font-medium truncate">
@@ -5173,7 +5244,7 @@ const stopVerticalResize = () => {
                         </span>
                       </div>
                     </div>
-                    <div class="text-sm text-muted-foreground truncate">{getMessageFromName(msg)}</div>
+                    <div class="text-sm text-muted-foreground truncate">{listIsSentFolder ? `To: ${getMessageToName(msg) || getMessageFromName(msg)}` : getMessageFromName(msg)}</div>
                     {#if Array.isArray(msg.labels) && msg.labels.length}
                       <div class="flex flex-wrap gap-1.5 mt-1">
                         {#each msg.labels.slice(0, 4) as lbl}
@@ -6168,14 +6239,14 @@ const stopVerticalResize = () => {
                       <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
                         {#each filterDownloadableAttachments($attachments) as att}
                           {#if isPreviewableImage(att) && att.href}
-                            <div class="flex flex-col gap-1 max-w-xs">
+                            <div class="flex flex-col gap-1 max-w-[120px]">
                               <button
                                 type="button"
                                 class="cursor-pointer rounded border border-border overflow-hidden hover:opacity-90 transition-opacity"
                                 onclick={() => mailService.downloadAttachment(att, $selectedMessage)}
                                 title="Download {att.name || att.filename}"
                               >
-                                <img src={att.href} alt={att.name || att.filename} class="max-h-48 max-w-xs object-contain" />
+                                <img src={att.href} alt={att.name || att.filename} class="max-h-20 max-w-[120px] object-contain" />
                               </button>
                               <div class="flex items-center gap-1.5 text-xs text-muted-foreground px-0.5">
                                 <span class="truncate">{att.name || att.filename}</span>
@@ -6225,47 +6296,6 @@ const stopVerticalResize = () => {
                       onLinkClick={handleIframeLinkClick}
                       onFormSubmit={handleIframeFormSubmit}
                     />
-                    {#if filterDownloadableAttachments(cachedBody?.attachments).length}
-                      <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                        {#each filterDownloadableAttachments(cachedBody?.attachments) as att}
-                          {#if isPreviewableImage(att) && att.href}
-                            <div class="flex flex-col gap-1 max-w-xs">
-                              <button
-                                type="button"
-                                class="cursor-pointer rounded border border-border overflow-hidden hover:opacity-90 transition-opacity"
-                                onclick={() => mailService.downloadAttachment(att, message)}
-                                title="Download {att.name || att.filename}"
-                              >
-                                <img src={att.href} alt={att.name || att.filename} class="max-h-48 max-w-xs object-contain" />
-                              </button>
-                              <div class="flex items-center gap-1.5 text-xs text-muted-foreground px-0.5">
-                                <span class="truncate">{att.name || att.filename}</span>
-                                {#if att.size}<span class="shrink-0">{formatAttachmentSize(att.size)}</span>{/if}
-                                <button
-                                  type="button"
-                                  class="shrink-0 hover:text-foreground transition-colors cursor-pointer"
-                                  onclick={() => mailService.downloadAttachment(att, message)}
-                                  title="Download"
-                                >
-                                  <Download class="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          {:else}
-                            <button
-                              type="button"
-                              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 cursor-pointer transition-colors"
-                              onclick={() => mailService.downloadAttachment(att, message)}
-                              title="Download {att.name || att.filename}"
-                            >
-                              <span>{att.name || att.filename}</span>
-                              {#if att.size}<span class="text-xs text-muted-foreground">{formatAttachmentSize(att.size)}</span>{/if}
-                              <Download class="h-3.5 w-3.5 ml-1" />
-                            </button>
-                          {/if}
-                        {/each}
-                      </div>
-                    {/if}
                   {:else}
                     <!-- Fallback to snippet if body not yet loaded -->
                     <div class="p-4 text-sm text-muted-foreground">
@@ -6357,14 +6387,14 @@ const stopVerticalResize = () => {
               <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
                 {#each filterDownloadableAttachments($attachments) as att}
                   {#if isPreviewableImage(att) && att.href}
-                    <div class="flex flex-col gap-1 max-w-xs">
+                    <div class="flex flex-col gap-1 max-w-[120px]">
                       <button
                         type="button"
                         class="cursor-pointer rounded border border-border overflow-hidden hover:opacity-90 transition-opacity"
                         onclick={() => mailService.downloadAttachment(att, $selectedMessage)}
                         title="Download {att.name || att.filename}"
                       >
-                        <img src={att.href} alt={att.name || att.filename} class="max-h-48 max-w-xs object-contain" />
+                        <img src={att.href} alt={att.name || att.filename} class="max-h-20 max-w-[120px] object-contain" />
                       </button>
                       <div class="flex items-center gap-1.5 text-xs text-muted-foreground px-0.5">
                         <span class="truncate">{att.name || att.filename}</span>

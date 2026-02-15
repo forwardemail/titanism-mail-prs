@@ -28,6 +28,7 @@
     item: Message | ConversationItem;
     threaded?: boolean;
     isSelected?: boolean;
+    isSentFolder?: boolean;
     onSelect?: (item: Message | ConversationItem) => void;
     onToggle?: (item: Message | ConversationItem, event: Event) => void;
     onContext?: (event: MouseEvent, item: Message | ConversationItem) => void;
@@ -39,6 +40,7 @@
     item,
     threaded = false,
     isSelected = false,
+    isSentFolder = false,
     onSelect = () => {},
     onToggle = () => {},
     onContext = () => {},
@@ -68,7 +70,9 @@
   };
 
   const lastMessage = $derived(threaded ? (item as ConversationItem)?.messages?.slice?.(-1)?.[0] : item as Message);
-  const from = $derived(extractDisplayName((lastMessage as Message)?.from || (lastMessage as Record<string, unknown>)?.From as string));
+  const fromName = $derived(extractDisplayName((lastMessage as Message)?.from || (lastMessage as Record<string, unknown>)?.From as string));
+  const toName = $derived(extractDisplayName((lastMessage as Message)?.to || (lastMessage as Record<string, unknown>)?.To as string));
+  const from = $derived(isSentFolder ? `To: ${toName || fromName}` : fromName);
   const subject = $derived((lastMessage as Message)?.subject || '(No subject)');
   const snippet = $derived(truncatePreview((lastMessage as Message)?.snippet || ''));
   const date = $derived(formatCompactDate((lastMessage as Message)?.date || (lastMessage as Message)?.dateMs || Date.now()));

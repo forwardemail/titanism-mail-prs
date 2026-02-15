@@ -123,6 +123,12 @@
 
   // Handle postMessage events from iframe
   function handleMessage(event: MessageEvent) {
+    // Only accept messages from our own iframe to prevent cross-contamination
+    // when multiple EmailIframe instances exist (e.g., conversation view)
+    if (iframeRef && event.source !== iframeRef.contentWindow) {
+      return;
+    }
+
     // Validate message structure - must match our expected format
     const data = event.data;
     if (!data || typeof data !== 'object' || !data.type) {
@@ -245,6 +251,7 @@
   .fe-email-iframe-container {
     width: 100%;
     min-height: 100px;
+    flex-shrink: 0;
   }
 
   .fe-email-iframe {
