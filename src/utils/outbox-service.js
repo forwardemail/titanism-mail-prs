@@ -171,7 +171,7 @@ async function updateOutboxCount() {
  * Similar to saveSentCopy in Compose.svelte
  */
 async function saveSentCopyToFolder(emailPayload) {
-  return saveSentCopy(emailPayload, getAccount(), 'Outbox');
+  return saveSentCopy(emailPayload, getAccount(), null);
 }
 
 /**

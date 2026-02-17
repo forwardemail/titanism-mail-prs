@@ -20,7 +20,7 @@ export const resolveSentFolder = (account = null, folderList = null) => {
   const preferred = getSentFolderPreference(account);
   if (preferred) return preferred;
 
-  if (folderList?.length) {
+  if (Array.isArray(folderList) && folderList.length) {
     // Strongest signal: IMAP specialUse flag
     const specialUseMatch = folderList.find((f) => f.specialUse === '\\Sent');
     if (specialUseMatch) return specialUseMatch.path;

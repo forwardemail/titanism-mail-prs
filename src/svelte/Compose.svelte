@@ -1852,6 +1852,7 @@
       await saveSentCopy(payload);
     } catch (err) {
       console.warn('[Compose] Failed to save sent copy:', err);
+      toasts?.show?.('Message sent, but failed to save copy to Sent folder', 'warning');
     }
   };
 
