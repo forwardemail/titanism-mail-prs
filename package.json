@@ -29,9 +29,7 @@
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "prepare": "husky install",
-    "release": "commit-and-tag-version",
-    "release:minor": "commit-and-tag-version --release-as minor",
-    "release:major": "commit-and-tag-version --release-as major"
+    "release": "np"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -89,7 +87,7 @@
     "@typescript-eslint/parser": "^8.53.1",
     "@vitest/coverage-v8": "^2.1.4",
     "autoprefixer": "^10.4.23",
-    "commit-and-tag-version": "^12.6.1",
+    "np": "^10.2.0",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.46.0",
@@ -114,6 +112,12 @@
     "vite-plugin-pwa": "^0.17.0",
     "vitest": "^2.1.4",
     "workbox-cli": "^7.0.0"
+  },
+  "np": {
+    "message": "chore(release): %s",
+    "branch": "main",
+    "publish": false,
+    "releaseDraft": true
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx,jsx,svelte}": "pnpm run lint",

@@ -174,21 +174,12 @@ BREAKING CHANGE: settings store schema changed, requires cache clear
 
 ### Releasing
 
-Releases are cut locally using [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version). It reads commits since the last tag, bumps `package.json`, and creates a git tag. Release notes are managed via GitHub Releases.
+Releases are cut locally using [np](https://github.com/sindresorhus/np). It runs pre-release checks (clean tree, tests, build), bumps `package.json`, creates a git tag, pushes, and drafts a GitHub Release.
 
 Only release commits trigger production deployment — regular pushes to `main` run CI (lint, test, build) but do not deploy.
 
 ```bash
-# 1. Bump version and create tag
-pnpm release            # auto-detect bump from commits (fix→patch, feat→minor)
-pnpm release:minor      # force a minor bump
-pnpm release:major      # force a major bump
-
-# 2. Push to trigger deploy
-git push --follow-tags
-
-# 3. (Optional) Create GitHub Release with notes
-gh release create v0.x.x --title "v0.x.x" --generate-notes
+pnpm release            # interactive version prompt, runs checks, pushes, drafts GitHub release
 ```
 
 ## Configuration
