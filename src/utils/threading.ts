@@ -472,7 +472,9 @@ export function groupIntoConversations(messages: MessageLike[]): ConversationRes
 }
 
 /**
- * Deduplicate messages by Message-ID
+ * Deduplicate messages by unique server ID (uid/id).
+ * Falls back to Message-ID + folder to avoid collapsing forwarded emails
+ * that share the same Message-ID header but are distinct messages.
  */
 export function deduplicateMessages(messages: MessageLike[]): MessageLike[] {
   if (!Array.isArray(messages)) return [];
@@ -481,18 +483,31 @@ export function deduplicateMessages(messages: MessageLike[]): MessageLike[] {
   const unique: MessageLike[] = [];
 
   for (const message of messages) {
-    const messageId = getMessageId(message);
+    // Prefer server-assigned unique ID — distinct per message per folder
+    const uid = message?.uid ?? message?.Uid ?? message?.id;
+    const folder = message?.folder ?? message?.Folder ?? '';
+    let key: string | null = null;
 
-    if (!messageId) {
+    if (uid != null) {
+      key = `${folder}:${uid}`;
+    } else {
+      // Fallback: Message-ID + folder so forwarded copies aren't collapsed
+      const messageId = getMessageId(message);
+      if (messageId) {
+        key = `${folder}:${messageId}`;
+      }
+    }
+
+    if (!key) {
       unique.push(message);
       continue;
     }
 
-    if (seen.has(messageId)) {
+    if (seen.has(key)) {
       continue;
     }
 
-    seen.add(messageId);
+    seen.add(key);
     unique.push(message);
   }
 
