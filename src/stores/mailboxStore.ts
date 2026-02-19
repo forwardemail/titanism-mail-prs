@@ -295,15 +295,20 @@ const mergeMissingFrom = async (account, list = []) => {
   }
 };
 
-const getMessageKey = (msg) =>
-  msg?.id ??
-  msg?.message_id ??
-  msg?.messageId ??
-  msg?.['Message-ID'] ??
-  msg?.uid ??
-  msg?.uidnext ??
-  msg?.header_message_id ??
-  null;
+const getMessageKey = (msg) => {
+  // Prefer server-assigned id/uid which is unique per message per folder.
+  // Fallback to Message-ID header scoped by folder to avoid collapsing
+  // forwarded emails that share the same Message-ID as the original.
+  const uid = msg?.id ?? msg?.uid ?? msg?.Uid ?? msg?.uidnext;
+  if (uid != null) return uid;
+  const messageId =
+    msg?.message_id ?? msg?.messageId ?? msg?.['Message-ID'] ?? msg?.header_message_id;
+  if (messageId) {
+    const folder = msg?.folder ?? '';
+    return `${folder}:${messageId}`;
+  }
+  return null;
+};
 
 const mergeMessagePages = (existing = [], incoming = []) => {
   const merged = [];
