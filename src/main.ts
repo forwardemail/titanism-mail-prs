@@ -1,6 +1,6 @@
 import * as mailboxActions from './stores/mailboxActions';
 import { createStarfield } from './utils/starfield';
-import { Local, reconcileOrphanedAccountData } from './utils/storage';
+import { Local, Accounts, reconcileOrphanedAccountData } from './utils/storage';
 import { keyboardShortcuts, showKeyboardShortcutsHelp } from './utils/keyboard-shortcuts';
 import { i18n } from './utils/i18n';
 import { createToastHost } from './svelte/toastsHost';
@@ -1144,6 +1144,32 @@ async function bootstrap() {
       // Update URL to /mailbox when user is authenticated and on root path
       // But skip this if we're adding an account
       history.replaceState({}, '', '/mailbox');
+    }
+
+    // Handle ?email= query parameter for account switching
+    const emailParam = params.get('email');
+    if (emailParam && route !== 'login') {
+      const allAccounts = Accounts.getAll();
+      const activeEmail = Accounts.getActive();
+      const normalizedEmail = emailParam.trim().toLowerCase();
+      const matchedAccount = allAccounts.find((a) => a.email.toLowerCase() === normalizedEmail);
+
+      if (matchedAccount) {
+        // Already logged in with this account — switch to it if not already active
+        if (activeEmail?.toLowerCase() !== normalizedEmail) {
+          mailboxActions.switchAccount(normalizedEmail);
+        }
+        // Clean up URL — remove query params, go to /mailbox
+        history.replaceState({}, '', '/mailbox');
+        route = 'mailbox';
+        routeStore.set('mailbox');
+      } else {
+        // Not logged in with this account — go to add-account login with email prefilled
+        history.replaceState({}, '', `/?add_account=true&email=${encodeURIComponent(emailParam)}`);
+        route = 'login';
+        routeStore.set('login');
+        window.dispatchEvent(new CustomEvent('login-prefill-email', { detail: emailParam }));
+      }
     }
 
     const mailboxMode =

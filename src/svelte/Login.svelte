@@ -21,11 +21,13 @@
     new URLSearchParams(window.location.search).get('add_account') === 'true';
   let isAddingAccount = $state(getIsAddingAccount());
 
-  // Don't prefill email when adding a new account
+  // Prefill email from ?email= param (even in add-account mode), otherwise from storage
   const getInitialEmail = () => {
-    if (getIsAddingAccount()) return '';
     const params = new URLSearchParams(window.location.search);
-    return params.get('email') || Local.get('email') || '';
+    const emailParam = params.get('email');
+    if (emailParam) return emailParam;
+    if (getIsAddingAccount()) return '';
+    return Local.get('email') || '';
   };
   let email = $state(getInitialEmail());
   let password = $state('');
@@ -45,17 +47,36 @@
       isAddingAccount = getIsAddingAccount();
     };
     const handleLoginClearFields = () => {
-      clearFields();
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email');
+      if (emailParam) {
+        email = emailParam;
+        password = '';
+      } else {
+        clearFields();
+      }
+      syncAddAccountState();
+    };
+
+    const handlePrefillEmail = (e: Event) => {
+      email = (e as CustomEvent).detail || '';
       syncAddAccountState();
     };
 
     // Listen for custom event from navigate function
     window.addEventListener('login-clear-fields', handleLoginClearFields);
 
+    // Listen for prefill event from bootstrap (account switching flow)
+    window.addEventListener('login-prefill-email', handlePrefillEmail);
+
     // Listen for popstate (back/forward navigation)
     const handlePopState = () => {
       if (getIsAddingAccount()) {
-        clearFields();
+        const params = new URLSearchParams(window.location.search);
+        const emailParam = params.get('email');
+        if (!emailParam) {
+          clearFields();
+        }
       }
       syncAddAccountState();
     };
@@ -63,13 +84,17 @@
 
     // Check on mount in case we navigated here with add_account
     if (getIsAddingAccount()) {
-      clearFields();
+      const params = new URLSearchParams(window.location.search);
+      if (!params.get('email')) {
+        clearFields();
+      }
     }
     syncAddAccountState();
 
     return () => {
       loginEffectInitialized = false;
       window.removeEventListener('login-clear-fields', handleLoginClearFields);
+      window.removeEventListener('login-prefill-email', handlePrefillEmail);
       window.removeEventListener('popstate', handlePopState);
     };
   });
