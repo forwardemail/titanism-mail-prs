@@ -130,12 +130,11 @@ export function normalizeMessageForCache(
     nodemailerHeaders.references ||
     nodemailerHeaders.References ||
     null;
-  const apiId =
-    (raw.id as string) ||
-    (raw.Id as string) ||
-    (raw.message_id as string) ||
-    (raw.messageId as string) ||
-    (raw.header_message_id as string);
+  // Only use server-assigned identifiers for the record ID.
+  // Email headers (message_id, header_message_id) must NOT be used here —
+  // forwarded emails and replies can share the same Message-ID header,
+  // causing distinct messages to collide and overwrite each other in IDB.
+  const apiId = (raw.id as string) || (raw.Id as string);
   const uid = (raw.Uid as number) || (raw.uid as number) || null;
   const dateVal =
     (raw.date as string | number) ||
@@ -200,7 +199,7 @@ export function normalizeMessageForCache(
   const bccField = extractRecipientsField(raw, 'bcc');
 
   return {
-    id: apiId || String(uid),
+    id: apiId || (uid != null ? String(uid) : null) || headerMessageId,
     account,
     folder:
       (raw.folder_path as string) || (raw.folder as string) || (raw.path as string) || folder || '',

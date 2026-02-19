@@ -249,6 +249,35 @@ async function initializeDb(nameOverride: string | null = null): Promise<{ succe
       }
       await db.open();
       initialized = true;
+
+      // One-time migration: remove messages whose `id` is a Message-ID header
+      // (contains @ and angle brackets). These are orphaned records from a bug
+      // where normalizeMessageForCache used the Message-ID email header as the
+      // record ID, causing forwarded emails to overwrite each other in IDB.
+      try {
+        const migrationKey = 'migration:purge-message-id-header-keys';
+        const already = await db.meta.get(migrationKey);
+        if (!already) {
+          const allMessages = await db.messages.toArray();
+          const bad = allMessages.filter((m) => {
+            const id = m?.id;
+            return (
+              typeof id === 'string' && id.includes('@') && (id.startsWith('<') || id.includes('>'))
+            );
+          });
+          if (bad.length) {
+            const keys = bad.map((m) => [m.account, m.id]);
+            await db.messages.bulkDelete(keys);
+            // Also clean up corresponding message bodies
+            await db.messageBodies.bulkDelete(keys).catch(() => {});
+            console.log(`[db.worker] Migration: purged ${bad.length} orphaned message records`);
+          }
+          await db.meta.put({ key: migrationKey, updatedAt: Date.now() });
+        }
+      } catch (err) {
+        console.warn('[db.worker] Migration failed (non-fatal):', err);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('[db.worker] Database initialization failed:', error);
