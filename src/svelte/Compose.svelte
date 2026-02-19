@@ -1886,6 +1886,7 @@
     try {
       await queueEmail(payload, { sendAt });
       const msgIdToDelete = sourceMessageId;
+      const serverDraftIdToDelete = currentDraftServerId;
       if (currentDraftId) {
         try {
           await deleteDraft(currentDraftId);
@@ -1895,6 +1896,10 @@
       }
       // Delete source message from Drafts folder if this was an edited draft
       await deleteSourceMessage(msgIdToDelete);
+      // Delete autosaved server draft if it exists and is different from the source
+      if (serverDraftIdToDelete && serverDraftIdToDelete !== msgIdToDelete) {
+        await deleteSourceMessage(serverDraftIdToDelete);
+      }
       const formattedDate = new Date(sendAt).toLocaleString(i18n.getFormattingLocale(), {
         weekday: 'short',
         month: 'short',
@@ -1949,6 +1954,7 @@
       try {
         await queueEmail(payload);
         const msgIdToDelete = sourceMessageId;
+        const serverDraftIdToDelete = currentDraftServerId;
         if (currentDraftId) {
           try {
             await deleteDraft(currentDraftId);
@@ -1959,6 +1965,10 @@
         }
         // Delete source message from Drafts folder if this was an edited draft
         await deleteSourceMessage(msgIdToDelete);
+        // Delete autosaved server draft if it exists and is different from the source
+        if (serverDraftIdToDelete && serverDraftIdToDelete !== msgIdToDelete) {
+          await deleteSourceMessage(serverDraftIdToDelete);
+        }
         toasts?.show?.('Message queued - will send when online', 'info');
         setVisible(false);
         reset();
@@ -1975,6 +1985,7 @@
       await Remote.request('Emails', payload, { method: 'POST' });
       await saveSentCopyWrapper(payload);
       const msgIdToDelete = sourceMessageId;
+      const serverDraftIdToDelete = currentDraftServerId;
       if (currentDraftId) {
         try {
           await deleteDraft(currentDraftId);
@@ -1985,6 +1996,10 @@
       }
       // Delete source message from Drafts folder if this was an edited draft
       await deleteSourceMessage(msgIdToDelete);
+      // Delete autosaved server draft if it exists and is different from the source
+      if (serverDraftIdToDelete && serverDraftIdToDelete !== msgIdToDelete) {
+        await deleteSourceMessage(serverDraftIdToDelete);
+      }
       success = 'Message sent';
       toasts?.show?.('Message sent', 'success');
       // Cache recipient addresses for offline autocomplete
@@ -2002,6 +2017,7 @@
         try {
           await queueEmail(payload);
           const msgIdToDelete = sourceMessageId;
+          const serverDraftIdToDelete = currentDraftServerId;
           if (currentDraftId) {
             try {
               await deleteDraft(currentDraftId);
@@ -2012,6 +2028,10 @@
           }
           // Delete source message from Drafts folder if this was an edited draft
           await deleteSourceMessage(msgIdToDelete);
+          // Delete autosaved server draft if it exists and is different from the source
+          if (serverDraftIdToDelete && serverDraftIdToDelete !== msgIdToDelete) {
+            await deleteSourceMessage(serverDraftIdToDelete);
+          }
           toasts?.show?.('Network error - message queued for retry', 'warning');
           setVisible(false);
           reset();
