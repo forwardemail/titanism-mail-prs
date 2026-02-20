@@ -1328,6 +1328,10 @@ const stopVerticalResize = () => {
 
     lastSelectedMessageId = lastMessage?.id;
 
+    // Clear body/attachments BEFORE updating selectedMessage to prevent stale content
+    // from the previous message flashing with the new message's subject/sender.
+    source.state?.messageBody?.set?.('');
+    source.state?.attachments?.set?.([]);
     updateSelectedConversation(conv);
     if (source.state?.selectedMessage) {
       mailboxStore.state.selectedMessage.set(lastMessage);
@@ -1377,10 +1381,13 @@ const stopVerticalResize = () => {
     lastSelectedMessageId = msg?.id;
 
     mailboxView?.selectMessage?.(msg);
+    // Clear body/attachments BEFORE updating selectedMessage to prevent stale content
+    // from the previous message flashing with the new message's subject/sender.
+    // loadMessage() will populate the body from cache or network.
+    source.state?.messageBody?.set?.('');
+    source.state?.attachments?.set?.([]);
     source.state?.selectedMessage?.set?.(msg);
     // Reset loading state to prevent skeleton flicker for cached messages.
-    // Don't clear body/attachments here - keep old content visible until new content is ready.
-    // The body will be updated by loadMessage() -> mailService.loadMessageDetail() -> onBody callback.
     source.state?.messageLoading?.set?.(false);
     if (isProductivityLayout || isClassicMobileViewport()) {
       openReaderFullscreen();
