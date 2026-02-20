@@ -646,8 +646,9 @@ async function parseRawMessage(raw, existingAttachments = []) {
     });
 
     // Use HTML if available, otherwise wrap text in <pre>
+    // Never fall back to raw MIME source — it contains headers that should not be displayed
     const body =
-      email.html || (email.text ? `<pre style="white-space:pre-wrap">${email.text}</pre>` : raw);
+      email.html || (email.text ? `<pre style="white-space:pre-wrap">${email.text}</pre>` : '');
 
     // Apply inline attachments (cid: → data:)
     const inlined = applyInlineAttachments(body, deduped);
@@ -773,14 +774,18 @@ async function fetchAndCacheBodyWithOptions(account, folder, msg, options = {}) 
           return { id: apiId, folder, pgpLocked: true, raw };
         }
         const parsed = await parseRawMessage(decrypted);
-        body = parsed.body;
-        textContent = parsed.textContent;
-        attachments = parsed.attachments;
+        if (parsed) {
+          body = parsed.body;
+          textContent = parsed.textContent;
+          attachments = parsed.attachments;
+        }
       } else {
         const parsed = await parseRawMessage(raw);
-        body = parsed.body;
-        textContent = parsed.textContent;
-        attachments = parsed.attachments;
+        if (parsed) {
+          body = parsed.body;
+          textContent = parsed.textContent;
+          attachments = parsed.attachments;
+        }
       }
     } else {
       const serverText =
