@@ -1114,7 +1114,14 @@ const createMailboxStore = () => {
           (!get(selectedMessage) || get(selectedMessage)?.folder !== folder)
         ) {
           selectedMessage.set(findFirstMessage(filterPendingDeletes(nextMessages), currentSort));
-        } else if (!merged.length && get(selectedMessage)?.folder === folder) {
+        } else if (
+          !merged.length &&
+          get(selectedMessage)?.folder === folder &&
+          !get(searchActive)
+        ) {
+          // Only clear selection when no results and search is NOT active.
+          // When search is active, selectedMessage is managed by searchMessages(),
+          // not loadMessages() — clearing it here would drop the active search result.
           selectedMessage.set(null);
         }
       }
@@ -1241,6 +1248,10 @@ const createMailboxStore = () => {
       if (get(selectedFolder) !== folder) return;
       if (get(loading)) return;
       if (inFlightMessageListRequest) return; // Don't compete with user pagination
+      // Skip refresh when search is active — the search view uses searchResults,
+      // not messages. Calling loadMessages() during search can clear selectedMessage
+      // if the API response differs from the search results.
+      if (get(searchActive)) return;
       lastSyncRefresh = { account, folder, at: Date.now() };
       loadMessages();
     }, 150);
